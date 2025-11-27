@@ -14,7 +14,7 @@ const Cars = () => {
   const returnDate = searchParams.get("returnDate");
   const urlSearchQuery = searchParams.get("search");
 
-  const { cars, axios } = useAppContext();
+  const { cars, axios, isOwner } = useAppContext();
   const [input, setInput] = useState(urlSearchQuery || "");
   const [filteredCars, setFilteredCars] = useState([]);
   const isSearchData = pickupLocation && pickupDate && returnDate;
@@ -22,18 +22,22 @@ const Cars = () => {
   // Filter cars by input or URL search
   const applyFilter = () => {
     const query = input.trim().toLowerCase();
-    if (!query) {
-      setFilteredCars(cars);
-      return;
+    let filtered = cars;
+
+    if (query) {
+      filtered = cars.filter(
+        (car) =>
+          car.brand.toLowerCase().includes(query) ||
+          car.model.toLowerCase().includes(query) ||
+          car.category.toLowerCase().includes(query) ||
+          car.transmission.toLowerCase().includes(query)
+      );
     }
 
-    const filtered = cars.filter(
-      (car) =>
-        car.brand.toLowerCase().includes(query) ||
-        car.model.toLowerCase().includes(query) ||
-        car.category.toLowerCase().includes(query) ||
-        car.transmission.toLowerCase().includes(query)
-    );
+    // Hide unavailable cars for normal users
+    if (!isOwner) {
+      filtered = filtered.filter((car) => car.isAvailable);
+    }
 
     setFilteredCars(filtered);
   };
@@ -48,8 +52,16 @@ const Cars = () => {
       });
 
       if (data.success) {
-        setFilteredCars(data.availableCars);
-        if (data.availableCars.length === 0) toast("No cars available");
+        let available = data.availableCars;
+
+        // Hide unavailable for normal users
+        if (!isOwner) {
+          available = available.filter((car) => car.isAvailable);
+        }
+
+        setFilteredCars(available);
+
+        if (available.length === 0) toast("No cars available");
       }
     } catch (error) {
       toast.error("Failed to check availability");
@@ -58,11 +70,11 @@ const Cars = () => {
 
   useEffect(() => {
     if (isSearchData) searchCarAvailability();
-  }, []);
+  }, [isOwner]); // re-run if isOwner changes
 
   useEffect(() => {
     if (!isSearchData) applyFilter();
-  }, [input, cars]);
+  }, [input, cars, isOwner]);
 
   useEffect(() => {
     if (urlSearchQuery) setInput(urlSearchQuery);
@@ -116,7 +128,6 @@ const Cars = () => {
         </p>
 
         <div
-         
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mt-4 xl:px-20 max-w-7xl mx-auto"
         >
           {filteredCars.map((car, index) => (

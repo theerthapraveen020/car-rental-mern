@@ -9,12 +9,8 @@ export const Protect = async (req, res, next) => {
       return res.status(401).json({ success: false, message: "Not authorized, no token" });
     }
 
-    const token = authHeader.split(" ")[1]; 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET); 
-
-    if (!decoded || !decoded.id) {
-      return res.status(401).json({ success: false, message: "Invalid token" });
-    }
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     req.user = await User.findById(decoded.id).select("-password");
 
@@ -24,9 +20,6 @@ export const Protect = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error("Auth error:", error.message);
     res.status(401).json({ success: false, message: "Not authorized" });
   }
 };
-
- 

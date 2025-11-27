@@ -13,7 +13,11 @@ const MyBookings = () => {
   const fetchMyBookings = async () => {
     setLoading(true);
     try {
+
+
       const { data } = await axios.get("/api/bookings/user");
+
+
       if (data.success) {
         setBookings(data.bookings);
       } else {
